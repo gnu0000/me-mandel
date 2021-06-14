@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Mandel</title>
+      <link type="text/css" rel="stylesheet" href="mandel.css" />
+      <script type="text/javascript" src="/js/jquery.min.js"></script>
+      <script type="text/javascript" src="mandel.js"></script>
+   </head>
+     
+   <body>
+      <div id="maincontainer">
+         <canvas id="plane" width="1920" height="1200">
+            If you can see this, you need a new browser..
+         </canvas>
+         <canvas id="plane-overlay" width="1920" height="1200">
+            If you can see this, you need a new browser..
+         </canvas>
+      </div>
+      <div id="set-iter">
+         Max Iterations: <input type="text" id="iter" />
+      </div>
+      <div id="set-workers">
+         Web worker count: <input type="text" id="worker-ct" />
+      </div>
+      <div id="save-image">
+         Image Filename: <input type="text" />
+         <a href="#">Save</a>
+      </div>
+      <div id="colors">
+         <table id="color-table">
+            <tr><th></th><th>Start</th><th>Delta</th></tr>
+            <tr><td>Red:  </td><td><input type="text" class="rs" /></td><td><input type="text" class="rd" /></td></tr>
+            <tr><td>Green:</td><td><input type="text" class="gs" /></td><td><input type="text" class="gd" /></td></tr>
+            <tr><td>Blue: </td><td><input type="text" class="bs" /></td><td><input type="text" class="bd" /></td></tr>
+         </table>
+      </div>
+      <div id="help">
+         <pre>
+ Editing Keys
+ <hr />
+ [h]        - Toggle this help
+ [r]        - Reset
+ Click-drag - Select a block
+ [+]        - Zoomin to block  
+ [-]        - Zoomout from block  
+ Mousewheel - Zoom in/out at mouse 
+ [space]    - Center at mouse pos
+ [i]        - Set max iterations
+ [c]        - Change colors
+ [w]        - Set web worker count
+ [s]        - Save image
+ [d]        - Debug info
+         </pre>
+      </div>
+      <div id="debug-info">
+         <pre>
+ Debug Stuff
+ <hr />
+ Mouse X    : [<span id="pos-x"></span>] <span id="point-x"></span>
+ Mouse Y    : [<span id="pos-y"></span>] <span id="point-y"></span>
+ X Min      : <span id="from-x"></span>
+ X Max      : <span id="to-x"></span>
+ Y Min      : <span id="from-y"></span>
+ Y Max      : <span id="to-y"></span>
+ Max Iter   : <span id="max-iter"></span>
+ Iterations : [<span id="iter-min"></span> : <span id="iter-max"></span>]
+ Window Size: [<span id="window-x"></span> : <span id="window-y"></span>]
+ Color Delta: <span id="cdelta"></span>
+ Worker Ct  : <span id="workers"></span>
+ Render Time: <span id="render-time"></span>
+         </pre>
+      </div>
+
+   </body>
+</html>
+
+
+
