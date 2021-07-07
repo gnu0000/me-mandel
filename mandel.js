@@ -69,6 +69,7 @@ class MandelPage {
    }
 
    InitState() {
+      if (this.UrlParam('nh')) $("#help").hide();
       this.SetupWorkers();
       this.HandleResize();
    }
@@ -214,8 +215,11 @@ class MandelPage {
 
       if (this.selecting) {
          this.endSel.x = e.x;
-         //this.endSel.y = e.y; <- nope, make it keep the aspect ratio
-         this.endSel.y = this.startSel.y + (this.endSel.x - this.startSel.x) * this.aspect;
+         if (e.shiftKey) {
+            this.endSel.y = e.y;
+         } else {
+            this.endSel.y = this.startSel.y + (this.endSel.x - this.startSel.x) * this.aspect;
+         }
          this.DrawSelection();
       }
    }
