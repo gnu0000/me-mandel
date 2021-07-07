@@ -9,9 +9,6 @@
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-0.9974149939088077&y0=-0.28745231377667163&x1=-0.9974149936972826&y1=-0.2874523136558001&r=1&g=109&b=208&rd=0.449&gd=1.1609&bd=0.3352
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-1.2242399925349&y0=-0.13112323809286083&x1=-1.2242399268802495&y1=-0.13112320057591773&r=197&g=23&b=208&rd=1.024&gd=2.14&bd=3.062
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=500&x0=-0.9974147551123084&y0=-0.28745249157767716&x1=-0.9974142757661713&y1=-0.2874522176655988&r=1&g=109&b=208&rd=3.357&gd=8.87&bd=7.562// 
-// 
-// 
-// 
 
 
 $(function() {
@@ -109,6 +106,8 @@ class MandelPage {
    }
 
    Draw() {
+      this.ctxo.clearRect(0,0,this.overlay.width,this.overlay.height);
+
       this.startTime = Date.now();
       this.iter = {min: 99999, max: 0};
       this.NextInterlace(this.canvas.height);
@@ -263,7 +262,7 @@ class MandelPage {
       let ps = this.CanvasToPoint(this.startSel);
       let pe = this.CanvasToPoint(this.endSel);
       this.range = {x0: ps.x, x1:pe.x, y0:ps.y, y1: pe.y};
-      this.HandleResize();
+      this.Draw();
    }
 
    // todo var to let
@@ -277,12 +276,14 @@ class MandelPage {
       let ny1 = r.y1 + (r.y1 - pe.y) / (pe.y - ps.y) * (r.y1 - r.y0);
       
       this.range = {x0:nx0, y0:ny0, x1:nx1, y1:ny1};
-      this.HandleResize();
+      this.Draw();
+
    }
 
    ZoomToPoint(pin, scale) {
       this.range = this.GetZoomExtents(this.range, pin, scale);
-      this.HandleResize();
+      this.Draw();
+
    }
 
    GetZoomExtents(range, pin, scale) {
@@ -295,11 +296,10 @@ class MandelPage {
    }
 
    rng(r, p, scale) {
-      //return r + (p - r) * scale;
       return p - (p - r) * scale;
    }
 
-   CenterAtPoint() {
+    CenterAtPoint() {
       let pin = this.CanvasToPoint(this.mousePos);
       
       let dx = pin.x - (this.range.x0 + this.range.x1)/  2;
@@ -313,7 +313,7 @@ class MandelPage {
 
    Recolor() {
       this.InitColors();
-      this.HandleResize();
+      this.Draw();
    }
 
    ColorPicker() {
@@ -350,7 +350,7 @@ class MandelPage {
 
    HandleMaxIter = () => {
       this.maxIter = $('#iter').val() - 0;
-      this.HandleResize();
+      this.Draw();
       $('#set-iter').hide();
    }
 
@@ -363,7 +363,8 @@ class MandelPage {
    HandleWorkerCount = () => {
       this.workerCount = $('#worker-ct').val() - 0;
       this.SetupWorkers();
-      this.HandleResize();
+      this.Draw();
+
       $('#set-workers').hide();
    }
 
@@ -371,7 +372,6 @@ class MandelPage {
    SaveImage() {
       //var image = this.canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
       //window.location.href = image;
-
       $('#save-image input').val(`Mandel${this.imageIdx}.png`)
       $('#save-image').toggle();
    }
