@@ -73,48 +73,15 @@ class MandelPage {
       this.HandleResize();
    }
 
-   //InitColors() {
-   //   this.cdelta = 10; // (256 * 15)/(this.maxSteps - this.minSteps);
-   //
-   //   this.colors = {
-   //      r: this.RandomI(255), rd: this.Random(this.cdelta),
-   //      g: this.RandomI(255), gd: this.Random(this.cdelta),
-   //      b: this.RandomI(255), bd: this.Random(this.cdelta)
-   //   }
-   //}
-
    InitColors() {
-      this.cdelta = 10;
-
-      this.colorSeed = {
-         r: this.Random(this.cdelta),
-         g: this.Random(this.cdelta),
-         b: this.Random(this.cdelta)
-      };
-
+      this.cdelta = 10; // (256 * 15)/(this.maxSteps - this.minSteps);
+   
       this.colors = {
-         r: this.RandomI(255), rd: this.colorSeed.r,
-         g: this.RandomI(255), gd: this.colorSeed.g,
-         b: this.RandomI(255), bd: this.colorSeed.b
+         r: this.RandomI(255), rd: this.Random(this.cdelta),
+         g: this.RandomI(255), gd: this.Random(this.cdelta),
+         b: this.RandomI(255), bd: this.Random(this.cdelta)
       }
-      this.AdjustColorScale();
    }
-
-   AdjustColorScale() {
-      //let scaler = Math.sqrt(this.range.x1 - this.range.x0) / 3.5;
-      //
-      //let dx = this.range.x1 - this.range.x0;
-      //let n0 = dx % 1 == 0 ? 0 : -1 - Math.floor(Math.log10(dx % 1));
-      //let scaler = 1 / (10 ** (n0/4));
-
-      let scaler = 1;
-
-
-      this.colors.rd = this.colorSeed.r * scaler;
-      this.colors.gd = this.colorSeed.g * scaler;
-      this.colors.bd = this.colorSeed.b * scaler;
-   }
-
 
    HandleResize = () => {
       let x = $(window).width() ;
@@ -292,7 +259,6 @@ class MandelPage {
       let ps = this.CanvasToPoint(this.startSel);
       let pe = this.CanvasToPoint(this.endSel);
       this.range = {x0: ps.x, x1:pe.x, y0:ps.y, y1: pe.y};
-      this.AdjustColorScale();
       this.HandleResize();
    }
 
@@ -307,13 +273,11 @@ class MandelPage {
       let ny1 = r.y1 + (r.y1 - pe.y) / (pe.y - ps.y) * (r.y1 - r.y0);
       
       this.range = {x0:nx0, y0:ny0, x1:nx1, y1:ny1};
-      this.AdjustColorScale();
       this.HandleResize();
    }
 
    ZoomToPoint(pin, scale) {
       this.range = this.GetZoomExtents(this.range, pin, scale);
-      this.AdjustColorScale();
       this.HandleResize();
    }
 
@@ -371,7 +335,6 @@ class MandelPage {
 
    Reset() {
       this.range = {x0: -2.5, y0:-1, x1:1, y1: 1};
-      this.AdjustColorScale();
       this.HandleResize();
    }
 
