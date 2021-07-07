@@ -3,11 +3,19 @@
 // a canvas toy
 // Craig Fitzgerald
 //
-//
-// todo: reliable save image, gen link, support cgi params for all options
-//
+// todo: reliable save image
+// 
+// http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-1.224240592914189&y0=-0.13112358169928026&x1=-1.2242393197229833&y1=-0.13112285416144834&r=197&g=23&b=208&rd=1.024&gd=2.14&bd=3.062
+// http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-0.9974149939088077&y0=-0.28745231377667163&x1=-0.9974149936972826&y1=-0.2874523136558001&r=1&g=109&b=208&rd=0.449&gd=1.1609&bd=0.3352
+// http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-1.2242399925349&y0=-0.13112323809286083&x1=-1.2242399268802495&y1=-0.13112320057591773&r=197&g=23&b=208&rd=1.024&gd=2.14&bd=3.062
+// http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=500&x0=-0.9974147551123084&y0=-0.28745249157767716&x1=-0.9974142757661713&y1=-0.2874522176655988&r=1&g=109&b=208&rd=3.357&gd=8.87&bd=7.562// 
+// 
+// 
+// 
+
+
 $(function() {
-   new MandelPage("#plane", "#plane-overlay");
+   new MandelPage('#plane', '#plane-overlay');
 });
 
 class MandelPage {
@@ -35,6 +43,7 @@ class MandelPage {
       this.ctx     = this.canvas.getContext('2d');
       this.ctxo    = this.overlay.getContext('2d');
 
+      this.InitColors();
       this.AddUrlParams();
    }
    
@@ -49,29 +58,63 @@ class MandelPage {
          .mousedown(this.HandleMouseDown)
          .mouseup  (this.HandleMouseUp)
          .mousemove(this.HandleMouseMove)
-         .on("wheel", this.HandleMouseWheel);
+         .on('wheel', this.HandleMouseWheel);
 
-      $("#iter").change(this.HandleMaxIter);
-      $("#worker-ct").change(this.HandleWorkerCount);
-      $("#color-table input").change(this.HandleColorAttr);
-      $("#save-image input").keydown(this.HandleSaveName);
-      $("#save-image a").click(this.HandleSaveLink);
+      $('#iter').change(this.HandleMaxIter);
+      $('#worker-ct').change(this.HandleWorkerCount);
+      $('#color-table input').change(this.HandleColorAttr);
+      $('#save-image input').keydown(this.HandleSaveName);
+      $('#save-image a').click(this.HandleSaveLink);
+      $("#help").on("click touchstart", function() {$(this).hide()});
    }
 
    InitState() {
       this.SetupWorkers();
-      this.InitColors();
       this.HandleResize();
    }
 
+   //InitColors() {
+   //   this.cdelta = 10; // (256 * 15)/(this.maxSteps - this.minSteps);
+   //
+   //   this.colors = {
+   //      r: this.RandomI(255), rd: this.Random(this.cdelta),
+   //      g: this.RandomI(255), gd: this.Random(this.cdelta),
+   //      b: this.RandomI(255), bd: this.Random(this.cdelta)
+   //   }
+   //}
+
    InitColors() {
-      this.cdelta = 10; // (256 * 15)/(this.maxSteps - this.minSteps);
+      this.cdelta = 10;
+
+      this.colorSeed = {
+         r: this.Random(this.cdelta),
+         g: this.Random(this.cdelta),
+         b: this.Random(this.cdelta)
+      };
+
       this.colors = {
-         r: {start: this.RandomI(255), delta: this.Random(this.cdelta)},
-         g: {start: this.RandomI(255), delta: this.Random(this.cdelta)},
-         b: {start: this.RandomI(255), delta: this.Random(this.cdelta)}
+         r: this.RandomI(255), rd: this.colorSeed.r,
+         g: this.RandomI(255), gd: this.colorSeed.g,
+         b: this.RandomI(255), bd: this.colorSeed.b
       }
+      this.AdjustColorScale();
    }
+
+   AdjustColorScale() {
+      //let scaler = Math.sqrt(this.range.x1 - this.range.x0) / 3.5;
+      //
+      //let dx = this.range.x1 - this.range.x0;
+      //let n0 = dx % 1 == 0 ? 0 : -1 - Math.floor(Math.log10(dx % 1));
+      //let scaler = 1 / (10 ** (n0/4));
+
+      let scaler = 1;
+
+
+      this.colors.rd = this.colorSeed.r * scaler;
+      this.colors.gd = this.colorSeed.g * scaler;
+      this.colors.bd = this.colorSeed.b * scaler;
+   }
+
 
    HandleResize = () => {
       let x = $(window).width() ;
@@ -164,6 +207,7 @@ class MandelPage {
    HandleKeyDown = (event) => {
       let e = event.originalEvent;
       switch(e.which){
+         case 13: return this.GenerateUrl();  // <enter> - generate a URL
          case 32: return this.CenterAtPoint();// <space> - re color
          case 67: return this.Recolor();      // c - re color
          case 68: return this.DebugInfo();    // d - debug info
@@ -176,8 +220,8 @@ class MandelPage {
          case 90: return this.SaveImage2();   // z - debug
          case 107:return this.ZoomIn();       // + - bigger cells  / faster
          case 109:return this.ZoomOut();      // - - smaller cells / slower
-         case 72: return $("#help").toggle(); // h
-         case 191:return $("#help").toggle(); // ?
+         case 72: return $('#help').toggle(); // h
+         case 191:return $('#help').toggle(); // ?
       }
    }
 
@@ -230,7 +274,7 @@ class MandelPage {
    from(x,y) {
       this.ctxo.beginPath();
       this.ctxo.lineWidth = 1;
-      this.ctxo.strokeStyle = "#fff";
+      this.ctxo.strokeStyle = '#fff';
       this.ctxo.moveTo(x,y);
       return this;
    }
@@ -248,6 +292,7 @@ class MandelPage {
       let ps = this.CanvasToPoint(this.startSel);
       let pe = this.CanvasToPoint(this.endSel);
       this.range = {x0: ps.x, x1:pe.x, y0:ps.y, y1: pe.y};
+      this.AdjustColorScale();
       this.HandleResize();
    }
 
@@ -262,11 +307,13 @@ class MandelPage {
       let ny1 = r.y1 + (r.y1 - pe.y) / (pe.y - ps.y) * (r.y1 - r.y0);
       
       this.range = {x0:nx0, y0:ny0, x1:nx1, y1:ny1};
+      this.AdjustColorScale();
       this.HandleResize();
    }
 
    ZoomToPoint(pin, scale) {
       this.range = this.GetZoomExtents(this.range, pin, scale);
+      this.AdjustColorScale();
       this.HandleResize();
    }
 
@@ -302,64 +349,64 @@ class MandelPage {
    }
 
    ColorPicker() {
-      $("#color-table .rs").val(this.colors.r.start);
-      $("#color-table .gs").val(this.colors.g.start);
-      $("#color-table .bs").val(this.colors.b.start);
+      $('#color-table .rs').val(this.colors.r);
+      $('#color-table .gs').val(this.colors.g);
+      $('#color-table .bs').val(this.colors.b);
 
-      $("#color-table .rd").val(this.colors.r.delta);
-      $("#color-table .gd").val(this.colors.g.delta);
-      $("#color-table .bd").val(this.colors.b.delta);
+      $('#color-table .rd').val(this.colors.rd);
+      $('#color-table .gd').val(this.colors.gd);
+      $('#color-table .bd').val(this.colors.bd);
 
-      $("#colors").toggle();
+      $('#colors').toggle();
    }
 
    HandleColorAttr = () => {
       this.colors = {
-         r: {start: $("#color-table .rs").val(), delta: $("#color-table .rd").val()},
-         g: {start: $("#color-table .gs").val(), delta: $("#color-table .gd").val()},
-         b: {start: $("#color-table .bs").val(), delta: $("#color-table .bd").val()}
+         r: $('#color-table .rs').val(), rd: $('#color-table .rd').val(),
+         g: $('#color-table .gs').val(), gd: $('#color-table .gd').val(),
+         b: $('#color-table .bs').val(), bd: $('#color-table .bd').val()
       }
       this.Draw();
    }
 
    Reset() {
       this.range = {x0: -2.5, y0:-1, x1:1, y1: 1};
+      this.AdjustColorScale();
       this.HandleResize();
    }
 
    ShowMaxIter() {
-      $("#set-iter").toggle();
-      $("#iter").val(this.maxIter).focus();
+      $('#set-iter').toggle();
+      $('#iter').val(this.maxIter).focus();
       return false;
    }
 
    HandleMaxIter = () => {
-      this.maxIter = $("#iter").val() - 0;
+      this.maxIter = $('#iter').val() - 0;
       this.HandleResize();
-      $("#set-iter").hide();
+      $('#set-iter').hide();
    }
 
    ShowWorkerCt() {
-      $("#set-workers").toggle();
-      $("#worker-ct").val(this.workerCount).focus();
+      $('#set-workers').toggle();
+      $('#worker-ct').val(this.workerCount).focus();
       return false;
    }
 
    HandleWorkerCount = () => {
-      this.workerCount = $("#worker-ct").val() - 0;
+      this.workerCount = $('#worker-ct').val() - 0;
       this.SetupWorkers();
       this.HandleResize();
-      $("#set-workers").hide();
+      $('#set-workers').hide();
    }
 
    // todo: redo
    SaveImage() {
-      //console.log("saving image")
-      //var image = this.canvas.toDataURL("image/png").replace("image/png","image/octet-stream");
+      //var image = this.canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
       //window.location.href = image;
 
-      $("#save-image input").val(`Mandel${this.imageIdx}.png`)
-      $("#save-image").toggle();
+      $('#save-image input').val(`Mandel${this.imageIdx}.png`)
+      $('#save-image').toggle();
    }
    
    HandleSaveName = (event) => {
@@ -367,68 +414,72 @@ class MandelPage {
    }
 
    HandleSaveLink = () => {
-      let link = $("#save-image a").get(0);
-      link.download = $("#save-image input").val();
-      link.href = this.canvas.toDataURL("image/png").replace("image/png","image/octet-stream");
+      let link = $('#save-image a').get(0);
+      link.download = $('#save-image input').val();
+      link.href = this.canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
       this.imageIdx++;
-      $("#save-image").toggle();
+      $('#save-image').toggle();
    }
 
    //test
    SaveImage2() {
-      $("#save-image input").val(`Mandel${this.imageIdx}.png`)
-      $("#save-image").toggle();
-      $("#save-image a").trigger("click");
+      $('#save-image input').val(`Mandel${this.imageIdx}.png`)
+      $('#save-image').toggle();
+      $('#save-image a').trigger('click');
       }
 
    SaveLink() {
       //let results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
       let base = (window.location.href.match(/^(.*)([\?].*)?$/))[1]
-      let url = base + "?" +
-               "x0="+this.range.x0+"&"+
-               "y0="+this.range.y0+"&"+
-               "x1="+this.range.x1+"&"+
-               "y1="+this.range.y1+"&"+
-               "i="+this.maxIter;
-      // let uriContent = "data:application/octet-stream," + encodeURIComponent(url);
+      let url = base + '?' +
+               'x0='+this.range.x0+'&'+
+               'y0='+this.range.y0+'&'+
+               'x1='+this.range.x1+'&'+
+               'y1='+this.range.y1+'&'+
+               'i='+this.maxIter;
+      // let uriContent = 'data:application/octet-stream,' + encodeURIComponent(url);
       // //newWindow = window.open(uriContent, 'MandelLink');
-      let uriContent = "[InternetShortcut]\n" +
-                       "URL="+url+"\n";
+      let uriContent = '[InternetShortcut]\n' +
+                       'URL='+url+'\n';
       let aLink = document.createElement('a');
-      let evt = document.createEvent("HTMLEvents");
-      evt.initEvent("click");
-      aLink.download = "Mandel" + this.imageIdx++ + ".url ";
+      let evt = document.createEvent('HTMLEvents');
+      evt.initEvent('click');
+      aLink.download = 'Mandel' + this.imageIdx++ + '.url ';
       aLink.href = uriContent;
       aLink.dispatchEvent(evt);
    }
 
    DebugInfo(toggle = true) {
       let pt = this.CanvasToPoint(this.mousePos);
-      $("#pos-x"      ).text(this.mousePos.x);
-      $("#pos-y"      ).text(this.mousePos.y);
-      $("#point-x"    ).text(pt.x);
-      $("#point-y"    ).text(pt.y);
-      $("#max-iter"   ).text(this.maxIter);
-      $("#iter-min"   ).text(this.iter.min);
-      $("#iter-max"   ).text(this.iter.max);
-      $("#window-x"   ).text($(window).width() );
-      $("#window-y"   ).text($(window).height());
-      $("#from-x"     ).text(this.range.x0);
-      $("#from-y"     ).text(this.range.y0);
-      $("#to-x"       ).text(this.range.x1);
-      $("#to-y"       ).text(this.range.y1);
-      $("#cdelta"     ).text(this.cdelta);
-      $("#workers"    ).text(this.workerCount);
-      $("#render-time").text(this.renderTime);
-      if (toggle) $("#debug-info" ).toggle();
+      $('#pos-x'      ).text(this.mousePos.x);
+      $('#pos-y'      ).text(this.mousePos.y);
+      $('#point-x'    ).text(pt.x);
+      $('#point-y'    ).text(pt.y);
+      $('#max-iter'   ).text(this.maxIter);
+      $('#iter-min'   ).text(this.iter.min);
+      $('#iter-max'   ).text(this.iter.max);
+      $('#window-x'   ).text($(window).width() );
+      $('#window-y'   ).text($(window).height());
+      $('#from-x'     ).text(this.range.x0);
+      $('#from-y'     ).text(this.range.y0);
+      $('#to-x'       ).text(this.range.x1);
+      $('#to-y'       ).text(this.range.y1);
+      $('#cdelta'     ).text(this.cdelta);
+      $('#workers'    ).text(this.workerCount);
+      $('#render-time').text(this.renderTime);
+      if (toggle) $('#debug-info' ).toggle();
    }
 
    AddUrlParams() {
-      this.maxIter =     this.UrlParam("i" , this.maxIter )-0;
-      this.range = {x0 : this.UrlParam("x0", this.range.x0)-0,
-                    y0 : this.UrlParam("y0", this.range.y0)-0,
-                    x1 : this.UrlParam("x1", this.range.x1)-0,
-                    y1 : this.UrlParam("y1", this.range.y1)-0};
+      this.maxIter = this.UrlParam('i' , this.maxIter )-0;
+      let [r, c] = [this.range, ]
+
+      for (let p of ['x0','y0','x1','y1']) {
+         this.range[p] = this.UrlParam(p, this.range[p])-0;
+      }
+      for (let p of ['r','g','b','rd','gd','bd']) {
+         this.colors[p] = this.UrlParam(p, this.colors[p])-0;
+      }
    }
 
    UrlParam(name, defaultVal) {
@@ -437,6 +488,15 @@ class MandelPage {
          return decodeURIComponent(results[1]);
       }
       return defaultVal;
+   }
+
+   GenerateUrl = () => {
+      let s = self.state;
+      let url = new URL(document.location);
+      this.range.i = this.maxIter;
+      ['i','x0','y0','x1','y1'].map(p => url.searchParams.set(p, this.range[p]));
+      ['r','g','b','rd','gd','bd'].map(p => url.searchParams.set(p, this.colors[p]));
+      history.replaceState(null, '', url);
    }
 
    NextInterlace = (num = 0) => {
@@ -469,7 +529,7 @@ class MandelPage {
    }
 
    Random(max) {
-      return Math.random() * max;
+      return Math.floor(Math.random() * max * 1000) / 1000;
    }
 
    RandomI(max) {

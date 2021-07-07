@@ -12,9 +12,9 @@
 //       y      : 123,                            (scanline)
 //       maxIter: 500,                            (max iter calc for pixel)
 //       colors : {                               (colormap)
-//          r: {start: 128, delta: 5.0},
-//          g: {start:  64, delta: 6.0},
-//          b: {start: 200, delta: 2.0}
+//          r: 128, rd: 5.0,
+//          g:  64, gd: 6.0,
+//          b: 200, bd: 2.0
 //       }
 //    }
 //
@@ -48,29 +48,7 @@ class MandelWorker {
       });
    }
 
-//original
-//      while (x*x  + y*y < 4 && iter < nfo.maxIter) {
-//         let xtmp = x*x-y*y + px;
-//         let ytmp = 2*x*y + py;
-//         if (x==xtmp && y==ytmp) return nfo.maxIter;
-//         y = ytmp;
-//         x = xtmp;
-//         iter++;
-//      }
-//slower
-//      let xsqr = x*x;
-//      let ysqr = y*y;
-//      while (xsqr + ysqr < 4 && iter < nfo.maxIter) {
-//         y = x * y;
-//         y += y;
-//         y += py;
-//         x = xsqr - ysqr + px;
-//         xsqr = x*x;
-//         ysqr = y*y;
-//         iter++;
-//      }
-
-   CalcPixel(gridx, gridy) {
+   CalcPixel_orig(gridx, gridy) {
       let nfo = this.nfo;
       let px = nfo.range.x0 + nfo.delta.dx * gridx;
       let py = nfo.range.y0 + nfo.delta.dy * gridy;
@@ -89,7 +67,30 @@ class MandelWorker {
       }
       nfo.iter.min = Math.min(nfo.iter.min, iter);
       nfo.iter.max = Math.max(nfo.iter.max, iter);
+      return iter;
+   }
 
+   CalcPixel(gridx, gridy) {
+      let nfo = this.nfo;
+      let x0 = nfo.range.x0 + nfo.delta.dx * gridx;
+      let y0 = nfo.range.y0 + nfo.delta.dy * gridy;
+      let x=0, y=0, iter=0, max_iter=nfo.maxIter, bail = 1 << 16, xtemp;
+
+      while (x*x + y*y <= bail && iter < max_iter) {
+         xtemp = x*x - y*y + x0;
+         y = 2*x*y + y0;
+         x = xtemp;
+         iter++;
+      }
+
+      if (iter < max_iter) {
+         let log_zn = Math.log(x*x + y*y) / 2;
+         let nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+         iter += 1 - nu;
+      }
+
+      nfo.iter.min = Math.min(nfo.iter.min, iter);
+      nfo.iter.max = Math.max(nfo.iter.max, iter);
       return iter;
    }
 
@@ -104,17 +105,35 @@ class MandelWorker {
       this.vals[idx+3] = 255;
    }
 
+   //GetColor(pixelVal) {
+   //   if (pixelVal >= this.nfo.maxIter)
+   //      return {r:0, g:0, b:0};
+   //
+   //   let colors = this.nfo.colors;
+   //   return {
+   //      r: (colors.r + pixelVal * colors.rd) % 256,
+   //      g: (colors.g + pixelVal * colors.gd) % 256,
+   //      b: (colors.b + pixelVal * colors.bd) % 256
+   //   }
+   //}
+
    GetColor(pixelVal) {
       if (pixelVal >= this.nfo.maxIter)
          return {r:0, g:0, b:0};
 
+      //let cDelta = Math.sqrt(pixelVal) ** 1.3 * 2;
+      //if (Math.random() < 0.001) console.log(`pv: ${pixelVal},  cd: ${cDelta}`);
+      let cDelta = pixelVal;
+
+
       let colors = this.nfo.colors;
       return {
-         r: (colors.r.start + pixelVal * colors.r.delta) % 256,
-         g: (colors.g.start + pixelVal * colors.g.delta) % 256,
-         b: (colors.b.start + pixelVal * colors.b.delta) % 256
+         r: (colors.r + cDelta * colors.rd) % 256,
+         g: (colors.g + cDelta * colors.gd) % 256,
+         b: (colors.b + cDelta * colors.bd) % 256
       }
    }
+
 
    SetNfo(e) {
       let nfo = e.data;
