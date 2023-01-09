@@ -43,7 +43,7 @@ class MandelWorker {
       }
 
       postMessage({
-         row: this.nfo.row, 
+         row:  this.nfo.row, 
          vals: this.vals,
          iter: this.nfo.iter
       });

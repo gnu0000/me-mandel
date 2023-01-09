@@ -3,8 +3,8 @@
    <head>
       <title>Mandel</title>
       <link type="text/css" rel="stylesheet" href="mandel.css" />
-      <script type="text/javascript" src="/js/jquery.min.js"></script>
-      <script type="text/javascript" src="mandel.js"></script>
+      <script src="/js/jquery.min.js"></script>
+      <script type="module" src="mandel.js"></script>
    </head>
      
    <body>
@@ -21,10 +21,6 @@
       </div>
       <div id="set-workers">
          Web worker count: <input type="text" id="worker-ct" />
-      </div>
-      <div id="save-image">
-         Image Filename: <input type="text" />
-         <a href="#">Save</a>
       </div>
       <div id="colors">
          <table id="color-table">
@@ -49,7 +45,7 @@
  [c]        - Change colors 
  shift-[c]  - Change colors to continuous palette
  [w]        - Set web worker count
- [s]        - Save image
+ [s]        - Save image (drag saved image back to continue)
  [d]        - Debug info
          </pre>
       </div>

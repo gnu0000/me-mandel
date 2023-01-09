@@ -1,9 +1,11 @@
+"use strict";
+
 // Mandel.js
 // 
 // a canvas toy
 // Craig Fitzgerald
 //
-// todo: reliable save image
+// Saved images can be drag/dropped onto this page to continue editing
 // 
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-1.224240592914189&y0=-0.13112358169928026&x1=-1.2242393197229833&y1=-0.13112285416144834&r=197&g=23&b=208&rd=1.024&gd=2.14&bd=3.062
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-0.9974149939088077&y0=-0.28745231377667163&x1=-0.9974149936972826&y1=-0.2874523136558001&r=1&g=109&b=208&rd=0.449&gd=1.1609&bd=0.3352
@@ -13,11 +15,10 @@
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=2000&x0=-1.324537048165773&y0=-0.11084059575241267&x1=-1.3244185574612568&y1=-0.11077288677840344&h=0.408&hd=0.007
 // http://gn00ltnd8rs6ph2/toys/mandel/mandel.html?i=5000&x0=-1.3244585164555798&y0=-0.11083181825122136&x1=-1.3244584830263892&y1=-0.11083179914882679&r=99&g=50&b=58&rd=6.331&gd=4.037&bd=1.24
 
-$(function() {
-   new MandelPage('#plane', '#plane-overlay');
-});
+import PngMeta from './pngMetadata.js'
 
 class MandelPage {
+   version     = "1.1.0";
    range       = {x0: -2.5, y0:-1, x1:1, y1: 1};
    maxIter     = 500;
    selecting   = false;
@@ -51,21 +52,23 @@ class MandelPage {
       document.oncontextmenu = function() {return false};
 
       $(window)
-         .resize (this.HandleResize)
-         .keydown(this.HandleKeyDown);
+         .resize ((e)=>this.HandleResize(e))
+         .keydown((e)=>this.HandleKeyDown(e));
 
       $(this.overlay)
-         .mousedown(this.HandleMouseDown)
-         .mouseup  (this.HandleMouseUp)
-         .mousemove(this.HandleMouseMove)
-         .on('wheel', this.HandleMouseWheel);
+         .mousedown(     (e)=>this.HandleMouseDown(e))
+         .mouseup  (     (e)=>this.HandleMouseUp(e))
+         .mousemove(     (e)=>this.HandleMouseMove(e))
+         .on('wheel'   , (e)=>this.HandleMouseWheel(e))
+         .on("dragover", (e)=>this.HandleDragover(e))
+         .on("drop"    , (e)=>this.HandleDrop(e));
 
-      $('#iter').change(this.HandleMaxIter);
-      $('#worker-ct').change(this.HandleWorkerCount);
-      $('#color-table input').change(this.HandleColorAttr);
-      $('#save-image input').keydown(this.HandleSaveName);
-      $('#save-image a').click(this.HandleSaveLink);
-      $("#help").on("click touchstart", function() {$(this).hide()});
+      $('#iter'             ).change( (e)=>this.HandleMaxIter(e));
+      $('#worker-ct'        ).change( (e)=>this.HandleWorkerCount(e));
+      $('#color-table input').change( (e)=>this.HandleColorAttr(e));
+      $('#save-image input' ).keydown((e)=>this.HandleSaveName(e));
+      $('#save-image a'     ).click(  (e)=>this.HandleSaveLink(e));
+      $("#help"             ).on("click touchstart", function() {$(this).hide()});
    }
 
    InitState() {
@@ -380,52 +383,62 @@ class MandelPage {
       $('#set-workers').hide();
    }
 
-   // todo: redo
-   SaveImage() {
-      //var image = this.canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
-      //window.location.href = image;
-      $('#save-image input').val(`Mandel${this.imageIdx}.png`)
-      $('#save-image').toggle();
-   }
-   
-   HandleSaveName = (event) => {
-      event.originalEvent.stopPropagation();      
+   async SaveImage() {
+      console.log("in saveimage");
+
+      let link = document.createElement('a');
+      link.setAttribute("download", "mandel.png");
+      this.canvas.toBlob(async (blob) => {
+         let metadata = {
+            "tEXt": {
+               "Title": "A mandelbrot image",
+               "Software": `Mandel v${this.version}`,
+               "Params": JSON.stringify(this.GetState())
+            }
+         };
+         var newBlob = await PngMeta.writeMetadataB(blob,metadata);
+         let url = URL.createObjectURL(newBlob);
+         link.setAttribute('href', url);
+         link.click();
+      });
    }
 
-   HandleSaveLink = () => {
-      let link = $('#save-image a').get(0);
-      link.download = $('#save-image input').val();
-      link.href = this.canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
-      this.imageIdx++;
-      $('#save-image').toggle();
+   HandleDragover(e) {
+      e.preventDefault();
    }
 
-   //test
-   SaveImage2() {
-      $('#save-image input').val(`Mandel${this.imageIdx}.png`)
-      $('#save-image').toggle();
-      $('#save-image a').trigger('click');
+   HandleDrop(e) {
+      console.log("in handledrop");
+
+      e.preventDefault();
+      let file = e.originalEvent.dataTransfer.files[0];
+      if (!file.type.match(/\image\/png/i)) return;
+
+      var reader = new FileReader();
+      reader.onload = (e) => {   
+         let buffer = new Uint8Array(e.target.result);
+         let metadata = PngMeta.readMetadata(buffer);
+
+         if (!metadata.tEXt || !metadata.tEXt.Params) return;
+         console.log("png metadata:", metadata);
+         let params = JSON.parse(metadata.tEXt.Params);
+         this.SetState(params);
+         this.Draw();
+
+      };
+      reader.readAsArrayBuffer(file); // remove?
+   }
+
+   GetState() {
+      return {
+         range:   this.range,
+         maxIter: this.maxIter,
+         colors:  this.colors,
       }
+   }
 
-   SaveLink() {
-      //let results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
-      let base = (window.location.href.match(/^(.*)([\?].*)?$/))[1]
-      let url = base + '?' +
-               'x0='+this.range.x0+'&'+
-               'y0='+this.range.y0+'&'+
-               'x1='+this.range.x1+'&'+
-               'y1='+this.range.y1+'&'+
-               'i='+this.maxIter;
-      // let uriContent = 'data:application/octet-stream,' + encodeURIComponent(url);
-      // //newWindow = window.open(uriContent, 'MandelLink');
-      let uriContent = '[InternetShortcut]\n' +
-                       'URL='+url+'\n';
-      let aLink = document.createElement('a');
-      let evt = document.createEvent('HTMLEvents');
-      evt.initEvent('click');
-      aLink.download = 'Mandel' + this.imageIdx++ + '.url ';
-      aLink.href = uriContent;
-      aLink.dispatchEvent(evt);
+   SetState(state) {
+      Object.assign(this, state);
    }
 
    DebugInfo(toggle = true) {
@@ -519,3 +532,9 @@ class MandelPage {
       return Math.floor(Math.random() * max);
    }
 }
+
+
+$(function() {
+   new MandelPage('#plane', '#plane-overlay');
+});
+
